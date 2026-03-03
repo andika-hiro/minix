@@ -378,10 +378,11 @@ export function DirectMessages({ currentUser }: DirectMessagesProps) {
             <button
               type='button'
               className='btn'
-              onClick={handleCreateConversation}
-              disabled={creating || !newMessage.trim() || !newTarget}
+              onClick={() => {
+                alert('CLICK WORKING');
+              }}
             >
-              {creating ? 'Sending...' : 'Send DM'}
+              Send DM
             </button>
           </div>
           <div className='dm-list'>
