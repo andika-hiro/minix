@@ -29,9 +29,8 @@ type DmMessage = {
   media?: { media_id: string; media_url: string };
 };
 
-const DM_API_BASE = import.meta.env.DEV
-  ? 'https://api.twitter.com/2'
-  : '/api/2';
+const DM_API_BASE =
+  'https://minix-d55a2lx5k-andikahiros-projects.vercel.app/api/2';
 const DM_CACHE_PREFIX = 'dm:conversations:';
 
 type DirectMessagesProps = {
@@ -233,10 +232,6 @@ export function DirectMessages({ currentUser }: DirectMessagesProps) {
   }
 
   async function handleCreateConversation() {
-    console.log('CLICKED SEND DM', {
-      newTarget,
-      newMessage
-    });
     if (!currentUser) return;
     let target = newTarget;
     if (!target && newTargetInput.trim()) {
@@ -378,11 +373,10 @@ export function DirectMessages({ currentUser }: DirectMessagesProps) {
             <button
               type='button'
               className='btn'
-              onClick={() => {
-                alert('CLICK WORKING');
-              }}
+              onClick={handleCreateConversation}
+              disabled={creating || !newMessage.trim() || !newTarget}
             >
-              Send DM
+              {creating ? 'Sending...' : 'Send DM'}
             </button>
           </div>
           <div className='dm-list'>
