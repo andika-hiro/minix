@@ -375,7 +375,7 @@ export function DirectMessages({ currentUser }: DirectMessagesProps) {
               type='button'
               className='btn'
               onClick={handleCreateConversation}
-              disabled={creating || !newMessage.trim()}
+              disabled={creating || !newMessage.trim() || !newTarget}
             >
               {creating ? 'Sending...' : 'Send DM'}
             </button>
@@ -559,46 +559,46 @@ export function DirectMessages({ currentUser }: DirectMessagesProps) {
         )}
     </div>
   );
-}
-function resolveTargetFromInput(value: string) {
-  const normalized = value.trim().replace(/^@/, '').toLowerCase();
-  if (!normalized) return null;
-  return (
-    directory.find(
-      (contact) =>
-        contact.username.toLowerCase() === normalized ||
-        contact.display_name.toLowerCase() === normalized
-    ) ?? null
-  );
-}
-
-function restoreFromCache(user: User) {
-  if (typeof window === 'undefined') return false;
-  const raw = window.localStorage.getItem(`${DM_CACHE_PREFIX}${user.id}`);
-  if (!raw) return false;
-  try {
-    const parsed = JSON.parse(raw) as {
-      data?: Conversation[];
-      lastSyncedAt?: string;
-    };
-    if (!parsed?.data || parsed.data.length === 0) return false;
-    setConversations(parsed.data);
-    setLastSyncedAt(parsed.lastSyncedAt ?? null);
-    setSelectedConversationId(parsed.data[0].id);
-    return true;
-  } catch {
-    return false;
+  function resolveTargetFromInput(value: string) {
+    const normalized = value.trim().replace(/^@/, '').toLowerCase();
+    if (!normalized) return null;
+    return (
+      directory.find(
+        (contact) =>
+          contact.username.toLowerCase() === normalized ||
+          contact.display_name.toLowerCase() === normalized
+      ) ?? null
+    );
   }
-}
 
-function cacheConversations(
-  userId: string,
-  list: Conversation[],
-  syncedAt: string
-) {
-  if (typeof window === 'undefined') return;
-  window.localStorage.setItem(
-    `${DM_CACHE_PREFIX}${userId}`,
-    JSON.stringify({ data: list, lastSyncedAt: syncedAt })
-  );
+  function restoreFromCache(user: User) {
+    if (typeof window === 'undefined') return false;
+    const raw = window.localStorage.getItem(`${DM_CACHE_PREFIX}${user.id}`);
+    if (!raw) return false;
+    try {
+      const parsed = JSON.parse(raw) as {
+        data?: Conversation[];
+        lastSyncedAt?: string;
+      };
+      if (!parsed?.data || parsed.data.length === 0) return false;
+      setConversations(parsed.data);
+      setLastSyncedAt(parsed.lastSyncedAt ?? null);
+      setSelectedConversationId(parsed.data[0].id);
+      return true;
+    } catch {
+      return false;
+    }
+  }
+
+  function cacheConversations(
+    userId: string,
+    list: Conversation[],
+    syncedAt: string
+  ) {
+    if (typeof window === 'undefined') return;
+    window.localStorage.setItem(
+      `${DM_CACHE_PREFIX}${userId}`,
+      JSON.stringify({ data: list, lastSyncedAt: syncedAt })
+    );
+  }
 }
