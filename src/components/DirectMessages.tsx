@@ -233,6 +233,10 @@ export function DirectMessages({ currentUser }: DirectMessagesProps) {
   }
 
   async function handleCreateConversation() {
+    console.log('CLICKED SEND DM', {
+      newTarget,
+      newMessage
+    });
     if (!currentUser) return;
     let target = newTarget;
     if (!target && newTargetInput.trim()) {
