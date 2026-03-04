@@ -145,6 +145,7 @@ export function DirectMessages({ currentUser }: DirectMessagesProps) {
   async function loadConversations(user: User, preferredId?: string | null) {
     setLoadingList(true);
     setError(null);
+    let nextSelection: string | null = null;
     try {
       const params = new URLSearchParams({
         user_id: user.id,
@@ -159,32 +160,28 @@ export function DirectMessages({ currentUser }: DirectMessagesProps) {
       const syncedAt = new Date().toISOString();
       setLastSyncedAt(syncedAt);
       cacheConversations(user.id, list, syncedAt);
+
       if (list.length === 0) {
         setSelectedConversationId(null);
         setMessages([]);
-        return null;
       } else {
-        let nextSelection: string | null = null;
         setSelectedConversationId((current) => {
           if (preferredId && list.some((c) => c.id === preferredId)) {
             nextSelection = preferredId;
-            return preferredId;
-          }
-          if (current && list.some((c) => c.id === current)) {
+          } else if (current && list.some((c) => c.id === current)) {
             nextSelection = current;
-            return current;
+          } else {
+            nextSelection = list[0].id;
           }
-          nextSelection = list[0].id;
-          return list[0].id;
+          return nextSelection;
         });
-        return nextSelection;
       }
     } catch (err: any) {
       setError(err?.message || 'Unable to load conversations');
     } finally {
       setLoadingList(false);
     }
-    return null;
+    return nextSelection;
   }
 
   async function loadMessages(conversationId: string) {
@@ -267,6 +264,7 @@ export function DirectMessages({ currentUser }: DirectMessagesProps) {
       );
       const resolvedConversation = conversationId ?? nextSelection;
       if (resolvedConversation) {
+        setSelectedConversationId(resolvedConversation);
         if (isCompact) setShowThreadModal(true);
         await loadMessages(resolvedConversation);
       }
