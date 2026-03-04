@@ -49,7 +49,7 @@ export function DirectMessages({ currentUser }: DirectMessagesProps) {
   const [loadingThread, setLoadingThread] = useState(false);
   const [draft, setDraft] = useState('');
   const [sending, setSending] = useState(false);
-  const [directory, setDirectory] = useState<ParticipantProfile[]>([]);
+  const [contactDirectory, setContactDirectory] = useState<ParticipantProfile[]>([]);
   const [newTarget, setNewTarget] = useState('');
   const [newTargetInput, setNewTargetInput] = useState('');
   const [newMessage, setNewMessage] = useState('');
@@ -63,7 +63,7 @@ export function DirectMessages({ currentUser }: DirectMessagesProps) {
       setConversations([]);
       setSelectedConversationId(null);
       setMessages([]);
-      setDirectory([]);
+      setContactDirectory([]);
       setShowThreadModal(false);
       setLastSyncedAt(null);
       return;
@@ -82,12 +82,12 @@ export function DirectMessages({ currentUser }: DirectMessagesProps) {
 
   useEffect(() => {
     if (!newTarget) return;
-    const exists = directory.some((contact) => contact.id === newTarget);
+    const exists = contactDirectory.some((contact) => contact.id === newTarget);
     if (!exists) {
       setNewTarget('');
       setNewTargetInput('');
     }
-  }, [directory, newTarget]);
+  }, [contactDirectory, newTarget]);
 
   useEffect(() => {
     if (typeof window === 'undefined') return;
@@ -136,10 +136,53 @@ export function DirectMessages({ currentUser }: DirectMessagesProps) {
         `/api/mock/dm_directory?exclude_id=${encodeURIComponent(userId)}`
       );
       const data = await r.json();
-      setDirectory(data.data || []);
+      setContactDirectory(data.data || []);
     } catch (err: any) {
       setError(err?.message || 'Unable to load contacts');
     }
+  }
+
+  function resolveTargetFromInput(value: string) {
+    const normalized = value.trim().replace(/^@/, '').toLowerCase();
+    if (!normalized) return null;
+    return (
+      contactDirectory.find(
+        (contact) =>
+          contact.username.toLowerCase() === normalized ||
+          contact.display_name.toLowerCase() === normalized
+      ) ?? null
+    );
+  }
+
+  function restoreFromCache(user: User) {
+    if (typeof window === 'undefined') return false;
+    const raw = window.localStorage.getItem(`${DM_CACHE_PREFIX}${user.id}`);
+    if (!raw) return false;
+    try {
+      const parsed = JSON.parse(raw) as {
+        data?: Conversation[];
+        lastSyncedAt?: string;
+      };
+      if (!parsed?.data || parsed.data.length === 0) return false;
+      setConversations(parsed.data);
+      setLastSyncedAt(parsed.lastSyncedAt ?? null);
+      setSelectedConversationId(parsed.data[0].id);
+      return true;
+    } catch {
+      return false;
+    }
+  }
+
+  function cacheConversations(
+    userId: string,
+    list: Conversation[],
+    syncedAt: string
+  ) {
+    if (typeof window === 'undefined') return;
+    window.localStorage.setItem(
+      `${DM_CACHE_PREFIX}${userId}`,
+      JSON.stringify({ data: list, lastSyncedAt: syncedAt })
+    );
   }
 
   async function loadConversations(user: User, preferredId?: string | null) {
@@ -356,7 +399,7 @@ export function DirectMessages({ currentUser }: DirectMessagesProps) {
               }}
             />
             <datalist id='dm-recipients'>
-              {directory.map((contact) => (
+              {contactDirectory.map((contact) => (
                 <option key={contact.id} value={`@${contact.username}`}>
                   {contact.display_name}
                 </option>
@@ -556,46 +599,4 @@ export function DirectMessages({ currentUser }: DirectMessagesProps) {
         )}
     </div>
   );
-  function resolveTargetFromInput(value: string) {
-    const normalized = value.trim().replace(/^@/, '').toLowerCase();
-    if (!normalized) return null;
-    return (
-      directory.find(
-        (contact) =>
-          contact.username.toLowerCase() === normalized ||
-          contact.display_name.toLowerCase() === normalized
-      ) ?? null
-    );
-  }
-
-  function restoreFromCache(user: User) {
-    if (typeof window === 'undefined') return false;
-    const raw = window.localStorage.getItem(`${DM_CACHE_PREFIX}${user.id}`);
-    if (!raw) return false;
-    try {
-      const parsed = JSON.parse(raw) as {
-        data?: Conversation[];
-        lastSyncedAt?: string;
-      };
-      if (!parsed?.data || parsed.data.length === 0) return false;
-      setConversations(parsed.data);
-      setLastSyncedAt(parsed.lastSyncedAt ?? null);
-      setSelectedConversationId(parsed.data[0].id);
-      return true;
-    } catch {
-      return false;
-    }
-  }
-
-  function cacheConversations(
-    userId: string,
-    list: Conversation[],
-    syncedAt: string
-  ) {
-    if (typeof window === 'undefined') return;
-    window.localStorage.setItem(
-      `${DM_CACHE_PREFIX}${userId}`,
-      JSON.stringify({ data: list, lastSyncedAt: syncedAt })
-    );
-  }
 }
